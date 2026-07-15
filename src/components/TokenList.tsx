@@ -1,3 +1,5 @@
+import { useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import type { Token } from "../types";
 import { TokenRow } from "./TokenRow";
 
@@ -7,24 +9,53 @@ interface TokenListProps {
   onSelect: (id: string) => void;
 }
 
-/**
- * Renders the feed.
- *
- * NOTE: this maps over every token and mounts a DOM node for each one. With a
- * few hundred rows that's fine; with tens of thousands of live-updating rows it
- * is not. This is the part of the app the challenge is about.
- */
-export function TokenList({ tokens, selectedId, onSelect }: TokenListProps) {
+/** Must match `.row { height: 52px }` in index.css — fixed at every viewport width. */
+const ROW_HEIGHT_PX = 52;
+
+export function TokenList({
+  tokens,
+  selectedId,
+  onSelect,
+}: TokenListProps): JSX.Element {
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  const virtualizer = useVirtualizer({
+    count: tokens.length,
+    getScrollElement: (): HTMLDivElement | null => parentRef.current,
+    estimateSize: (): number => ROW_HEIGHT_PX,
+    getItemKey: (index: number): string => tokens[index].id,
+    overscan: 8,
+  });
+
   return (
-    <div className="feed__list">
-      {tokens.map((token) => (
-        <TokenRow
-          key={token.id}
-          token={token}
-          selected={token.id === selectedId}
-          onSelect={onSelect}
-        />
-      ))}
+    <div className="feed__list" ref={parentRef}>
+      <div
+        style={{
+          height: virtualizer.getTotalSize(),
+          width: "100%",
+          position: "relative",
+        }}
+      >
+        {virtualizer.getVirtualItems().map((virtualItem) => {
+          const token = tokens[virtualItem.index];
+          return (
+            <TokenRow
+              key={virtualItem.key}
+              token={token}
+              selected={token.id === selectedId}
+              onSelect={onSelect}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: virtualItem.size,
+                transform: `translateY(${virtualItem.start}px)`,
+              }}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }

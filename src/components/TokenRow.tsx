@@ -1,3 +1,4 @@
+import { memo, type CSSProperties } from "react";
 import type { Token } from "../types";
 import { formatUsd, formatPct } from "../format";
 
@@ -5,14 +6,21 @@ interface TokenRowProps {
   token: Token;
   selected: boolean;
   onSelect: (id: string) => void;
+  style: CSSProperties;
 }
 
-export function TokenRow({ token, selected, onSelect }: TokenRowProps) {
+export const TokenRow = memo(function TokenRow({
+  token,
+  selected,
+  onSelect,
+  style,
+}: TokenRowProps): JSX.Element {
   const changeClass = token.priceChangePct >= 0 ? "up" : "down";
 
   return (
     <div
       className={`row${selected ? " row--selected" : ""}`}
+      style={style}
       onClick={() => onSelect(token.id)}
     >
       <div className="row__token">
@@ -26,4 +34,4 @@ export function TokenRow({ token, selected, onSelect }: TokenRowProps) {
       <div className={`num ${changeClass}`}>{formatPct(token.priceChangePct)}</div>
     </div>
   );
-}
+});
